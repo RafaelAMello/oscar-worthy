@@ -1,0 +1,19 @@
+version: "3"
+
+services:
+  web:
+    image: web
+    build: .
+    ports: 
+      - 80:80
+    volumes:
+      - .:/app/
+    command: flask run --port 80 --host 0.0.0.0 --debugger --reload
+
+  db:
+    image: neo4j
+    ports:
+      - 7474:7474
+      - 7687:7687
+    environment:
+      - NEO4J_AUTH=none
