@@ -1,0 +1,24 @@
+<!doctype html>
+<title>{% block title %}{% endblock %} - Flaskr</title>
+<nav>
+  <h1>Flaskr</h1>
+  <body>
+    <form method="POST" action="/">
+        {{ form.csrf_token }}
+        {{ form.title.label }} {{ form.title(size=20) }}
+        <!-- {{ form.description.label }} {{ form.description(size=400) }} -->
+        
+        <input type="submit" value="Go">
+    </form>
+  </body>
+  </ul>
+</nav>
+<section class="content">
+  <header>
+    {% block header %}{% endblock %}
+  </header>
+  {% for message in get_flashed_messages() %}
+    <div class="flash">{{ message }}</div>
+  {% endfor %}
+  {% block content %}{% endblock %}
+</section>
