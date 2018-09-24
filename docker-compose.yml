@@ -9,6 +9,13 @@ services:
     volumes:
       - .:/app/
     command: flask run --port 80 --host 0.0.0.0 --debugger --reload
+    environment:
+    - REDIS_URL=redis://redis:6379/0
+    - FLASK_APP=run.py
+
+  worker:
+    image: web
+    command: rq worker --url redis://redis:6379/0
 
   db:
     image: neo4j
@@ -17,3 +24,9 @@ services:
       - 7687:7687
     environment:
       - NEO4J_AUTH=none
+  
+  redis:
+    image: redis
+    hostname: redis
+    ports:
+      - 6379:6379
