@@ -14,9 +14,10 @@ itsdangerous==0.24
 jedi==0.12.1
 Jinja2==2.10
 MarkupSafe==1.0
-neo4j-driver==1.6.2
-neomodel==3.2.9
-neotime==1.0.0
+neo4j-driver==1.7.2
+neobolt==1.7.15
+neomodel==3.3.2
+neotime==1.7.4
 nltk==3.4.5
 numpy==1.15.2
 packaging==17.1
