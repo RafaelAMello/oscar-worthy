@@ -33,7 +33,7 @@ class Movie(StructuredNode):
     genres              = RelationshipTo(".genre.Genre", "IS_KIND")
     spoken_languages    = RelationshipFrom("Language", "SPOKEN_IN")
     keywords            = RelationshipTo("Keyword", "CONTAINS")
-    produced_by         = RelationshipFrom("ProductionCompany", "PRODUCED_BY")
+    produced_by         = RelationshipFrom(".production_company.ProductionCompany", "PRODUCED_BY")
     produced_in         = RelationshipTo("ProductionCountry", "PRODUCED_IN")
 
     acted_in            = RelationshipFrom("Person", "ACTS_IN", model=ActsIn)

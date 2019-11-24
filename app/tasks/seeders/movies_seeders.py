@@ -2,7 +2,7 @@ from datetime import datetime
 import pandas as pd
 import numpy as np
 
-from app.models import Movie, Genre
+from app.models import Movie, Genre, ProductionCompany
 
 class MovieCSVSerializer:
     DICT_LIST = [
@@ -71,19 +71,33 @@ class MovieCSVSerializer:
             })
         return processed_genre_lst
 
+    def process_production_companies_data(self, raw_production_companies_string):
+        production_companies_list = []
+        raw_production_companies_list = eval(raw_production_companies_string)
+        for raw_production_company in raw_production_companies_list:
+            production_companies_list.append({
+                'company_id' : raw_production_company['id'],
+                'name'       : raw_production_company['name']
+            })
+        return production_companies_list
+
     def movie_data(self):
         movie_data_list = []
         genre_data_list = []
+        production_companies_list = []
         for row_n, movie_data in self.df.iterrows():
             n = row_n + 1
             movie_data_list.append(self.process_movie_data(movie_data))
             genre_data_list.append(self.process_genre_data(movie_data['genres']))
+            production_companies_list.append(self.process_production_companies_data(movie_data['production_companies']))
+
 
             if (n / 100) == (n // 100) or (n == len(self.df)):
                 print(f"loading data {n}, {len(movie_data_list)}")
-                yield movie_data_list, genre_data_list
+                yield movie_data_list, genre_data_list, production_companies_list
                 movie_data_list = []
                 genre_data_list = []
+                production_companies_list = []
 
         return movie_data_list
 
@@ -96,10 +110,13 @@ class SeedMovies:
         self.df = get_data()
 
     def create_movies(self):
-        for movie_list, genre_list in MovieCSVSerializer().movie_data():
+        for movie_list, genre_list, production_company_list in MovieCSVSerializer().movie_data():
             movie_objects = Movie.get_or_create(*movie_list)
             for n, genres in enumerate(genre_list):
                 movie = movie_objects[n]
                 genres_objects = Genre.get_or_create(*genres)
-                for genre in genres_objects:
-                    movie.genres.connect(genre)
+                [movie.genres.connect(genre) for genre in genres_objects]
+            for n, production_companies in enumerate(production_company_list):
+                movie = movie_objects[n]
+                production_companies_objects = ProductionCompany.get_or_create(*production_companies)
+                [movie.produced_by.connect(production_company) for production_company in production_companies_objects]
