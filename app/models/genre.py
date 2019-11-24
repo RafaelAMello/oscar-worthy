@@ -5,6 +5,5 @@ from neomodel import IntegerProperty, StringProperty
 
 class Genre(StructuredNode):
     name        = StringProperty()
-    genre_id    = IntegerProperty()
-    
-    movie_with  = RelationshipFrom('Movie', "IS_KIND")
+    genre_id    = IntegerProperty(unique_index=True)
+    movies      = RelationshipFrom('.movie.Movie', "IS_KIND")

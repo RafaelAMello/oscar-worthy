@@ -3,7 +3,6 @@ from neomodel import IntegerProperty, StringProperty, DateProperty, FloatPropert
 from neomodel import RelationshipFrom, RelationshipTo
 
 from .relationships import ActsIn, CrewIn
-from .genre import Genre
 from .language import Language
 from .keyword import Keyword
 from .production_company import ProductionCompany
@@ -31,7 +30,7 @@ class Movie(StructuredNode):
     vote_average        = FloatProperty()
     vote_count          = IntegerProperty()
     
-    genres              = RelationshipTo("Genre", "IS_KIND")
+    genres              = RelationshipTo(".genre.Genre", "IS_KIND")
     spoken_languages    = RelationshipFrom("Language", "SPOKEN_IN")
     keywords            = RelationshipTo("Keyword", "CONTAINS")
     produced_by         = RelationshipFrom("ProductionCompany", "PRODUCED_BY")
