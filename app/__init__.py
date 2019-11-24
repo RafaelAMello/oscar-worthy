@@ -15,7 +15,3 @@ queue = tasks.setup_rq(app)
 def hello_world():
     form = forms.NewMovieIdea()
     return render_template('base.html', form=form)
-
-@app.route('/hello', methods=['GET'])
-def ello_orld():
-    queue.enqueue(tas)
