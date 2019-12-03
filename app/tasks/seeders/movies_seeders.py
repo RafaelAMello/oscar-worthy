@@ -1,6 +1,8 @@
 from datetime import datetime
 import pandas as pd
 import numpy as np
+from tqdm import tqdm
+import multiprocessing as mp
 
 from app.models import Movie, Genre, ProductionCompany
 
@@ -27,10 +29,9 @@ class MovieCSVSerializer:
         'vote_count'
     ]
 
-    def __init__(self):
-        self.df = get_data()
+    def __init__(self, df):
+        self.df = df
         self.df['oid'] = self.df['id']
-        # data_dict['release_date'] = datetime.strptime(data_dict['release_date'], '%Y-%m-%d')
 
     def check_nan(self, value, default_value=None):
         if np.isnan(value):
@@ -81,42 +82,51 @@ class MovieCSVSerializer:
             })
         return production_companies_list
 
-    def movie_data(self):
+    def __call__(self):
         movie_data_list = []
         genre_data_list = []
         production_companies_list = []
         for row_n, movie_data in self.df.iterrows():
-            n = row_n + 1
             movie_data_list.append(self.process_movie_data(movie_data))
             genre_data_list.append(self.process_genre_data(movie_data['genres']))
             production_companies_list.append(self.process_production_companies_data(movie_data['production_companies']))
+        self.save_data(movie_data_list, genre_data_list, production_companies_list)
 
-
-            if (n / 100) == (n // 100) or (n == len(self.df)):
-                print(f"loading data {n}, {len(movie_data_list)}")
-                yield movie_data_list, genre_data_list, production_companies_list
-                movie_data_list = []
-                genre_data_list = []
-                production_companies_list = []
-
-        return movie_data_list
+    def save_data(self, movie_data_list, genre_data_list, production_companies_list):
+        movie_objects = Movie.get_or_create(*movie_data_list)
+        for n, genres in enumerate(genre_data_list):
+            movie = movie_objects[n]
+            genres_objects = Genre.get_or_create(*genres)
+            [movie.genres.connect(genre) for genre in genres_objects]
+        for n, production_companies in enumerate(production_companies_list):
+            movie = movie_objects[n]
+            production_companies_objects = ProductionCompany.get_or_create(*production_companies)
+            [movie.produced_by.connect(production_company) for production_company in production_companies_objects]
 
 def get_data():
-    df = pd.read_csv('./data/movies_metadata.csv')
-    return df
+    return [chunk for chunk in pd.read_csv('./data/movies_metadata.csv', chunksize=100)]
 
-class SeedMovies:
-    def __init__(self):
-        self.df = get_data()
+def process_chunksize(df):
+    serializer = MovieCSVSerializer(df)
+    serializer()
 
-    def create_movies(self):
-        for movie_list, genre_list, production_company_list in MovieCSVSerializer().movie_data():
-            movie_objects = Movie.get_or_create(*movie_list)
-            for n, genres in enumerate(genre_list):
-                movie = movie_objects[n]
-                genres_objects = Genre.get_or_create(*genres)
-                [movie.genres.connect(genre) for genre in genres_objects]
-            for n, production_companies in enumerate(production_company_list):
-                movie = movie_objects[n]
-                production_companies_objects = ProductionCompany.get_or_create(*production_companies)
-                [movie.produced_by.connect(production_company) for production_company in production_companies_objects]
+class tracker:
+    def __init__(self, df_list):
+        self.pbar = tqdm(total=len(df_list))
+
+    def __call__(self, *a):
+        self.pbar.update()
+
+def run():
+    df_list = get_data()
+    t = tracker(df_list)
+    pool = mp.Pool(5)
+
+    for df in df_list:
+        pool.apply_async(process_chunksize, args=(df,), callback=t)
+
+    pool.close()
+    pool.join()
+
+if __name__ == '__main__':
+    run()
