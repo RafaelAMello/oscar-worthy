@@ -4,7 +4,7 @@ import numpy as np
 from tqdm import tqdm
 import multiprocessing as mp
 
-from app.models import Movie, Genre, ProductionCompany
+from app.models import Movie, Genre, ProductionCompany, Collection
 
 class MovieCSVSerializer:
     DICT_LIST = [
@@ -72,22 +72,40 @@ class MovieCSVSerializer:
             })
         return data_list
 
+    def process_single_data_structure(self, raw_string, id_name):
+        if type(raw_string) == str:
+            dictionary = eval(raw_string)
+            return {
+                id_name : dictionary['id'],
+                'name'  : dictionary['name']
+            }
+
     def __call__(self):
-        movie_data_list = []
-        genre_data_list = []
-        production_companies_list = []
+        movie_data_list             = []
+        genre_data_list             = []
+        production_companies_list   = []
+        collection_list             = []
+        
         for row_n, movie_data in self.df.iterrows():
             movie_data_list.append(self.process_movie_data(movie_data))
             genre_data_list.append(self.process_data_structure(movie_data['genres'], 'genre_id'))
             production_companies_list.append(self.process_data_structure(movie_data['production_companies'], 'company_id'))
-        self.save_data(movie_data_list, genre_data_list, production_companies_list)
+            collection_list.append(self.process_single_data_structure(movie_data['belongs_to_collection'], 'collection_id'))
+        self.save_data(movie_data_list, collection_list, genre_data_list, production_companies_list)
 
-    def save_data(self, movie_data_list, genre_data_list, production_companies_list):
+    def save_data(self, movie_data_list, collections_list, genre_data_list, production_companies_list):
         movie_objects = Movie.get_or_create(*movie_data_list)
+
+        for n, movie in enumerate(movie_objects):
+            if collections_list[n] is not None:
+                collection_object = Collection.get_or_create(collections_list[n])[0]
+                movie.is_part_of.connect(collection_object)
+
         for n, genres in enumerate(genre_data_list):
             movie = movie_objects[n]
             genres_objects = Genre.get_or_create(*genres)
             [movie.genres.connect(genre) for genre in genres_objects]
+
         for n, production_companies in enumerate(production_companies_list):
             movie = movie_objects[n]
             production_companies_objects = ProductionCompany.get_or_create(*production_companies)
@@ -114,6 +132,8 @@ def run():
 
     for df in df_list:
         pool.apply_async(process_chunksize, args=(df,), callback=t)
+        # process_chunksize(df)
+        # print("Done")
 
     pool.close()
     pool.join()

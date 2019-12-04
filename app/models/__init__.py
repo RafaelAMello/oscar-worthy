@@ -5,4 +5,5 @@ from .movie import Movie
 from .person import Person
 from .production_company import ProductionCompany
 from .production_country import ProductionCountry
+from .collection import Collection
 from .relationships import ActsIn, CrewIn
