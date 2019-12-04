@@ -61,26 +61,16 @@ class MovieCSVSerializer:
         raw_movie_data['budget']        = self.check_data_type(raw_movie_data['budget'], int)
         raw_movie_data['popularity']    = self.check_data_type(raw_movie_data['budget'], float)
         return raw_movie_data[self.DICT_LIST].to_dict()
-    
-    def process_genre_data(self, raw_genre_list_string):
-        processed_genre_lst = []
-        raw_genre_list = eval(raw_genre_list_string)
-        for raw_genre in raw_genre_list:
-            processed_genre_lst.append({
-                'genre_id'  : raw_genre['id'],
-                'name'      : raw_genre['name']
-            })
-        return processed_genre_lst
 
-    def process_production_companies_data(self, raw_production_companies_string):
-        production_companies_list = []
-        raw_production_companies_list = eval(raw_production_companies_string)
-        for raw_production_company in raw_production_companies_list:
-            production_companies_list.append({
-                'company_id' : raw_production_company['id'],
-                'name'       : raw_production_company['name']
+    def process_data_structure(self, raw_string, id_name):
+        data_list = []
+        evaluated_list = eval(raw_string)
+        for dictionary in evaluated_list:
+            data_list.append({
+                id_name : dictionary['id'],
+                'name'  : dictionary['name']
             })
-        return production_companies_list
+        return data_list
 
     def __call__(self):
         movie_data_list = []
@@ -88,8 +78,8 @@ class MovieCSVSerializer:
         production_companies_list = []
         for row_n, movie_data in self.df.iterrows():
             movie_data_list.append(self.process_movie_data(movie_data))
-            genre_data_list.append(self.process_genre_data(movie_data['genres']))
-            production_companies_list.append(self.process_production_companies_data(movie_data['production_companies']))
+            genre_data_list.append(self.process_data_structure(movie_data['genres'], 'genre_id'))
+            production_companies_list.append(self.process_data_structure(movie_data['production_companies'], 'company_id'))
         self.save_data(movie_data_list, genre_data_list, production_companies_list)
 
     def save_data(self, movie_data_list, genre_data_list, production_companies_list):
