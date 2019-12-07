@@ -32,10 +32,10 @@ class Movie(StructuredNode):
     vote_count          = IntegerProperty()
     
     genres              = RelationshipTo(".genre.Genre", "IS_KIND")
-    spoken_languages    = RelationshipFrom("Language", "SPOKEN_IN")
+    spoken_languages    = RelationshipFrom(".language.Language", "SPOKEN_IN")
     keywords            = RelationshipTo("Keyword", "CONTAINS")
-    produced_by         = RelationshipFrom(".production_company.ProductionCompany", "PRODUCED_BY")
-    produced_in         = RelationshipTo("ProductionCountry", "PRODUCED_IN")
+    produced_by         = RelationshipTo(".production_company.ProductionCompany", "PRODUCED_BY")
+    produced_in         = RelationshipTo(".production_country.ProductionCountry", "PRODUCED_IN")
     is_part_of          = RelationshipTo(".collection.Collection", "IS_PART_OF")
 
     acted_in            = RelationshipFrom("Person", "ACTS_IN", model=ActsIn)

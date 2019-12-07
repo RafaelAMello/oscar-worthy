@@ -4,7 +4,7 @@ import numpy as np
 from tqdm import tqdm
 import multiprocessing as mp
 
-from app.models import Movie, Genre, ProductionCompany, Collection
+from app.models import Movie, Genre, ProductionCompany, Collection, ProductionCountry
 
 class MovieCSVSerializer:
     DICT_LIST = [
@@ -62,14 +62,14 @@ class MovieCSVSerializer:
         raw_movie_data['popularity']    = self.check_data_type(raw_movie_data['budget'], float)
         return raw_movie_data[self.DICT_LIST].to_dict()
 
-    def process_data_structure(self, raw_string, id_name):
+    def process_data_structure(self, raw_string, **kwargs):
         data_list = []
         evaluated_list = eval(raw_string)
         for dictionary in evaluated_list:
-            data_list.append({
-                id_name : dictionary['id'],
-                'name'  : dictionary['name']
-            })
+            processed_dict = {}
+            for key, value in kwargs.items():
+                processed_dict[key] = dictionary[value]
+            data_list.append(processed_dict)
         return data_list
 
     def process_single_data_structure(self, raw_string, id_name):
@@ -84,16 +84,18 @@ class MovieCSVSerializer:
         movie_data_list             = []
         genre_data_list             = []
         production_companies_list   = []
+        production_countries_list   = []
         collection_list             = []
         
         for row_n, movie_data in self.df.iterrows():
             movie_data_list.append(self.process_movie_data(movie_data))
-            genre_data_list.append(self.process_data_structure(movie_data['genres'], 'genre_id'))
-            production_companies_list.append(self.process_data_structure(movie_data['production_companies'], 'company_id'))
+            genre_data_list.append(self.process_data_structure(movie_data['genres'], genre_id='id', name='name'))
+            production_companies_list.append(self.process_data_structure(movie_data['production_companies'], company_id='id', name='name'))
+            production_countries_list.append(self.process_data_structure(movie_data['production_countries'], iso_3166_1='iso_3166_1', name='name'))
             collection_list.append(self.process_single_data_structure(movie_data['belongs_to_collection'], 'collection_id'))
-        self.save_data(movie_data_list, collection_list, genre_data_list, production_companies_list)
+        self.save_data(movie_data_list, collection_list, genre_data_list, production_companies_list, production_countries_list)
 
-    def save_data(self, movie_data_list, collections_list, genre_data_list, production_companies_list):
+    def save_data(self, movie_data_list, collections_list, genre_data_list, production_companies_list, production_countries_list):
         movie_objects = Movie.get_or_create(*movie_data_list)
 
         for n, movie in enumerate(movie_objects):
@@ -110,6 +112,11 @@ class MovieCSVSerializer:
             movie = movie_objects[n]
             production_companies_objects = ProductionCompany.get_or_create(*production_companies)
             [movie.produced_by.connect(production_company) for production_company in production_companies_objects]
+
+        for n, production_country in enumerate(production_countries_list):
+            movie = movie_objects[n]
+            production_country_objects = ProductionCountry.get_or_create(*production_country)
+            [movie.produced_in.connect(production_country) for production_country in production_country_objects]
 
 def get_data():
     return [chunk for chunk in pd.read_csv('./data/movies_metadata.csv', chunksize=100)]
@@ -131,9 +138,9 @@ def run():
     pool = mp.Pool(5)
 
     for df in df_list:
-        pool.apply_async(process_chunksize, args=(df,), callback=t)
-        # process_chunksize(df)
-        # print("Done")
+        # pool.apply_async(process_chunksize, args=(df,), callback=t)
+        process_chunksize(df)
+        print("Done")
 
     pool.close()
     pool.join()

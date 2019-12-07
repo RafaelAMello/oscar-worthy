@@ -5,7 +5,7 @@ from neomodel import StringProperty
 
 
 class ProductionCountry(StructuredNode):
-    iso_3166_1 = StringProperty()
-    name       = StringProperty()
+    iso_3166_1  = StringProperty(unique_index=True)
+    name        = StringProperty()
     
-    produced = RelationshipFrom("Movie", "PRODUCED_IN")
+    produced    = RelationshipFrom(".movie.Movie", "PRODUCED_IN")
